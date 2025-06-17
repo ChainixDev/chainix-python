@@ -417,6 +417,57 @@ When errors occur during chain execution, the method returns an **empty dictiona
 
 **Note:** When a chain completes but encounters errors during execution, it will still return a structured response with `complete: True` and `success: False`, along with error details in `errorDiagnosis` and `errorType`. The empty dictionary `{}` is only returned for client-side or API communication failures.
 
+### Server-Side Error Types
+
+When a chain completes with `complete: True` and `success: False`, the `errorType` field will contain one of these specific error categories:
+
+- **`validation_error`**: Invalid input provided (HTTP 400 equivalent)
+  - Tried to update a variable that doesn't exist in your chain
+  - Missing required initial variables
+  - Invalid variable names or values
+  
+- **`function_call_error`**: Your registered function failed during execution
+  - Function threw an exception
+  - Function returned invalid structure
+  - Function returned `success: False`
+  
+- **`routing_error`**: Chain execution reached a dead end
+  - A step's output doesn't point to any next step
+  - Invalid routing configuration in the chain
+  
+- **`circular_error`**: Infinite loop detected
+  - The same step was reached twice during execution
+  - Prevents chains from running indefinitely
+  
+- **`low_confidence_error`**: AI inference didn't meet confidence threshold
+  - Model's confidence score was below the required threshold
+  - Useful for triggering manual review or alternative workflows
+  
+- **`unexpected_error`**: Internal server error (HTTP 500 equivalent)
+  - Catch-all for unexpected system failures
+  - Contact support if this occurs frequently
+
+#### Handling Different Error Types
+
+You can implement different logic based on the error type:
+
+```python
+result = client.run_chain(initial_variables)
+
+if result.get('complete') and not result.get('success'):
+    error_type = result.get('data', {}).get('errorType')
+    error_diagnosis = result.get('data', {}).get('errorDiagnosis')
+    
+    if error_type == 'low_confidence_error':
+        # Model wasn't confident - trigger manual review
+        print(f"Model uncertain: {error_diagnosis}")
+        send_email_to_reviewers(error_diagnosis)
+        queue_for_manual_processing(initial_variables)
+    else:
+        # Handle other error types as needed
+        print(f"Chain failed with {error_type}: {error_diagnosis}")
+```
+
 ### Understanding the Result Structure
 
 **Fields:**
