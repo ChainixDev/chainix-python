@@ -442,6 +442,9 @@ When a chain completes with `complete: True` and `success: False`, the `errorTyp
 - **`low_confidence_error`**: AI inference didn't meet confidence threshold
   - Model's confidence score was below the required threshold
   - Useful for triggering manual review or alternative workflows
+
+- **`usage_limit_exceeded_error`**: API usage limits have been reached
+  - Only applies to free accounts that exceed their daily spending limit
   
 - **`unexpected_error`**: Internal server error (HTTP 500 equivalent)
   - Catch-all for unexpected system failures
