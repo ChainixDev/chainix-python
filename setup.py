@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='chainix',
-    version='0.1.4',
+    version='1.0.2',
     author='Chainix',
     author_email='jack@chainix.ai',
-    description='A client library for executing asynchronous chains with custom function callbacks',
+    description='A client library for executing asynchronous chains on chainix.ai with custom function callbacks',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ChainixDev/chainix-python",

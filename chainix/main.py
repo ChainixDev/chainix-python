@@ -12,7 +12,7 @@ class AsyncChainClient:
         self,
         chain_id: str,
         api_key: str,
-        base_url: str = "https://chainix.ai",
+        base_url: str = "https://api.chainix.ai",
         max_wait_time: int = 300,
         poll_interval: int = 5,
         verbose: bool = True

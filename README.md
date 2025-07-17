@@ -188,7 +188,7 @@ client.register_functions(functions)
 client = AsyncChainClient(
     chain_id="your-chain-id",           # Your unique chain identifier
     api_key="your-api-key",             # Your API key for authentication
-    base_url="https://chainix.ai",      # Base URL (optional, defaults to chainix.ai)
+    base_url="https://api.chainix.ai",  # Base URL (optional, defaults to api.chainix.ai)
     max_wait_time=300,                  # Max wait time in seconds (optional, default 300)
     poll_interval=5,                    # How often to check status in seconds (optional, default 5, minimum 3)
     verbose=True                        # Whether to print status messages (optional, default True)
