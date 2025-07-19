@@ -20,14 +20,14 @@ client = AsyncChainClient(
 )
 
 # Define your custom functions
-def refund(args):
+def refund(inputs):
     try:
-        order_id = args['order id']
+        order_id = inputs['order_id']
         print(f"Issuing a refund for order: {order_id}")
     
         # Your business logic here
         # ... process refund ...
-        amount = 500
+        amount = '500'
         
         return {
             'success': True,
@@ -43,9 +43,9 @@ def refund(args):
         }
 
 
-def cancel_order(args):
+def cancel_order(inputs):
     try:
-        order_id = args['order id']
+        order_id = inputs['order_id']
         print(f"Cancelling order: {order_id}")
     
         # Your business logic here
@@ -77,8 +77,8 @@ client.register_functions(functions)
 # Execute a chain
 # Provide all initial variables needed to start the chain
 result = client.run_chain({
-    'message body': 'Hi, please cancel my order',
-    'order id': '33433',
+    'message_body': 'Hi, please cancel my order',
+    'order_id': '33433',
 })
 
 print("Chain completed:", result)
@@ -86,28 +86,28 @@ print("Chain completed:", result)
 
 ## Function Requirements
 
-All registered functions **must** follow these requirements:
+You must register a function corresponding to every function call step in the chain. All registered functions **must** follow these requirements:
 
 ### Function Signature
 Your functions should accept a single dictionary argument. When the function is called, this dictionary will contain the inputs for that function call step:
 
 ```python
-def my_function(args: dict) -> dict:
+def my_function(inputs: dict) -> dict:
     # Your business logic here
     pass
 ```
 
 **How it works:**
-1. You define variables in your chain on chainix.ai (e.g., `order id`, `user email`, `action`)
+1. You define variables in your chain on chainix.ai (e.g., `order_id`, `user_email`, `action`)
 2. You create function call steps in your chain and specify which variables should be passed as inputs to each step
 3. When the chain reaches a function call step, it stops and calls your registered function via it's id
 4. Your function receives a dictionary where each key is a variable you specified as an input for that step, and each value is the current value of that variable in the chain
 
-**Example:** If you have a function call step with `order id` and `user email` as inputs, your function will receive:
+**Example:** If you have a function call step with `order_id` and `user_email` as inputs, your function will receive a dictionary that looks like this:
 ```python
 {
-    'order id': '12345',
-    'user email': 'user@example.com'
+    'order_id': '12345',
+    'user_email': 'user@example.com'
 }
 ```
 
@@ -116,39 +116,42 @@ Your functions **must** return a dictionary with exactly two keys:
 
 ```python
 {
-    'success': bool,        # True if function executed successfully, False otherwise
-    'vars_to_update': dict  # Dictionary of variables to update in the chain (can be empty)
+    'success': bool,                  # True if function executed successfully, False otherwise
+    'vars_to_update': dict[str, str]  # Dictionary of variables to update in the chain (keys and values must be strings, can be empty)
 }
 ```
 
-**Important**: The keys in `vars_to_update` must exactly match the variable names you defined in your chain on chainix.ai. Only variables that exist in your chain can be updated. If you try to update a variable that doesn't exist in your chain, the chain will fail.
+**Important**: Each function **must** return a dictionary containing these exact two keys. If the return format is incorrect, the chain will fail during client-side execution and won't create any logs to indicate the cause of failure.
+
+**Important**: The keys in `vars_to_update` **must** exactly match the variable names you defined in your chain on chainix.ai. Only variables that exist in your chain can be updated. If you try to update a variable that doesn't exist in your chain, the chain will fail.
+
+**Important**: The keys and values in `vars_to_update` **must** be strings. If a key or value is not a string, the chain will fail.
 
 ### Example Function Structure
 
 ```python
-def process_order(args):
+def cancel_order(inputs):
     try:
-        # Extract arguments
-        order_id = args['order id']
-        action = args.get('action', 'process')
-        
+        # Extract step inputs
+        order_id = inputs['order_id']
+        customer_upset = inputs['customer_is_upset']
+
         # Your business logic here
-        if action == 'cancel':
-            # ... cancellation logic ...
+        if customer_upset == 'yes':
+            # ... cancellation logic with manager escalation ...
             return {
                 'success': True,
                 'vars_to_update': {
-                    'order status': 'cancelled',        # Must match variable name in your chain
-                    'cancellation date': '2024-01-01'  # Must match variable name in your chain
+                    'order_status': 'cancelled',        # Must match variable name in your chain
+                    'escalated_to_manager': 'yes'       # Must match variable name in your chain
                 }
             }
-        elif action == 'fulfill':
-            # ... fulfillment logic ...
+        elif customer_upset == 'no':
+            # ... cancellation logic without manager escalation ...
             return {
                 'success': True,
                 'vars_to_update': {
-                    'order status': 'fulfilled',        # Must match variable name in your chain
-                    'fulfillment date': '2024-01-01'   # Must match variable name in your chain
+                    'order_status': 'cancelled',        # Must match variable name in your chain
                 }
             }
         else:
@@ -156,7 +159,6 @@ def process_order(args):
                 'success': False,
                 'vars_to_update': {}
             }
-            
     except Exception as e:
         print(f"Error processing order: {e}")
         return {
@@ -188,7 +190,6 @@ client.register_functions(functions)
 client = AsyncChainClient(
     chain_id="your-chain-id",           # Your unique chain identifier
     api_key="your-api-key",             # Your API key for authentication
-    base_url="https://api.chainix.ai",  # Base URL (optional, defaults to api.chainix.ai)
     max_wait_time=300,                  # Max wait time in seconds (optional, default 300)
     poll_interval=5,                    # How often to check status in seconds (optional, default 5, minimum 3)
     verbose=True                        # Whether to print status messages (optional, default True)
@@ -211,12 +212,14 @@ client = AsyncChainClient(
 
 ### Basic Usage
 
+To run a chain, call `.run_chain()` on the client and provide values for all initial variables. Only provide values for initial variables.
+
 ```python
 result = client.run_chain(
     initial_variables={
-        'message body': 'Hi, please cancel my order',
-        'user email': 'user@example.com',
-        'order id': '12345',
+        'message_body': 'Hi, please cancel my order',
+        'user_email': 'user@example.com',
+        'order_id': '12345',
     }
 )
 ```
@@ -228,9 +231,9 @@ You can run chains in test mode for development and debugging:
 ```python
 result = client.run_chain(
     initial_variables={
-        'message body': 'Hi, please cancel my order',
-        'user email': 'user@example.com',
-        'order id': '12345'
+        'message_body': 'Hi, please cancel my order',
+        'user_email': 'user@example.com',
+        'order_id': '12345'
     },
     test=True  # Runs in test mode
 )
@@ -242,7 +245,7 @@ The client automatically handles several types of errors:
 
 - **Network errors**: Automatically retries with backoff
 - **Function execution errors**: Functions that throw exceptions are treated as failed (`success: False`)
-- **Invalid function returns**: If functions don't return the required structure, the chain will stop with a clear error message
+- **Invalid function returns**: If functions don't return the required structure, the chain will stop with a clear error message. Note that if your functions encounter errors but don't throw exceptions (e.g., they fail silently), these errors will not be automatically handled and the chain will fail client-side without creating logs.
 
 ### Best Practices
 
@@ -264,7 +267,7 @@ def robust_function(args):
         return {
             'success': True,
             'vars_to_update': {
-                'operation result': result,
+                'operation_result': result,
                 'timestamp': datetime.now().isoformat()
             }
         }
@@ -273,13 +276,13 @@ def robust_function(args):
         print(f"Validation error: {e}")
         return {
             'success': False,
-            'vars_to_update': {'error type': 'validation_error'}
+            'vars_to_update': {'error_type': 'validation_error'}
         }
     except Exception as e:
         print(f"Unexpected error: {e}")
         return {
             'success': False,
-            'vars_to_update': {'error type': 'unexpected_error'}
+            'vars_to_update': {'error_type': 'unexpected_error'}
         }
 ```
 
@@ -310,7 +313,7 @@ When a chain completes successfully, it returns a dictionary with the following 
             # ... all variables and their final values
         },
         'log': [
-            # Array of each step that was executed with step details
+            # Array containing details for each step, in execution order
             {
                 'stepType': 'inference',
                 'stepTitle': 'Analyze Request',
@@ -329,8 +332,8 @@ When a chain completes successfully, it returns a dictionary with the following 
 **Example successful result:**
 ```python
 result = client.run_chain({
-    'message body': 'Hi, please cancel my order',
-    'order id': '33433',
+    'message_body': 'Hi, please cancel my order',
+    'order_id': '33433',
 })
 
 # Result might look like:
@@ -340,20 +343,22 @@ result = client.run_chain({
     'data': {
         'runId': 'run_abc123',
         'initialVars': {
-            'message body': 'Hi, please cancel my order',
-            'order id': '33433'
+            'message_body': 'Hi, please cancel my order',
+            'order_id': '33433'
+            'order_status': '',
+            'cancellation_date': '',
         },
         'vars': {
-            'message body': 'Hi, please cancel my order',
-            'order id': '33433',
-            'order status': 'cancelled',
-            'cancellation_date': '2024-01-01'
+            'message_body': 'Hi, please cancel my order',
+            'order_id': '33433',
+            'order_status': 'cancelled',
+            'cancellation_date': '2024-01-01',
         },
         'log': [
             {
                 'stepType': 'inference',
                 'stepTitle': 'Analyze Message',
-                'updatedVars': {'request_type': 'cancellation'},
+                'updatedVars': {'request_type': 'cancellation.'},
                 'res': {
                     'result': {'action': 'cancel'},
                     'success': True,
@@ -369,6 +374,12 @@ result = client.run_chain({
                     'explanation': 'Order successfully cancelled',
                     'success': True,
                     'updatedVars': {'order status': 'cancelled', 'cancellation_date': '2024-01-01'}
+                }
+            },
+            {
+                'stepType': 'endpoint',
+                'res': {
+                    'explanation': 'Reached endpoint with id of "4c01ea23-di2i-3432-9gkf-38dkf8fcc8e"
                 }
             }
         ],
@@ -462,9 +473,9 @@ if result.get('complete') and not result.get('success'):
     error_diagnosis = result.get('data', {}).get('errorDiagnosis')
     
     if error_type == 'low_confidence_error':
-        # Model wasn't confident - trigger manual review
+        # Model wasn't confident - trigger manual review to update context
         print(f"Model uncertain: {error_diagnosis}")
-        send_email_to_reviewers(error_diagnosis)
+        send_email_to_chain_maintainers(error_diagnosis)
         queue_for_manual_processing(initial_variables)
     else:
         # Handle other error types as needed
