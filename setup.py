@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='chainix',
-    version='1.0.2',
+    version='1.0.5',
     author='Chainix',
     author_email='jack@chainix.ai',
     description='A client library for executing asynchronous chains on chainix.ai with custom function callbacks',

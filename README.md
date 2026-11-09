@@ -362,7 +362,7 @@ result = client.run_chain({
                 'res': {
                     'result': {'action': 'cancel'},
                     'success': True,
-                    'confidence': 0.95,
+                    'confidence': 1.0,
                     'explanation': 'Customer requested order cancellation'
                 }
             },
@@ -450,8 +450,8 @@ When a chain completes with `complete: True` and `success: False`, the `errorTyp
   - The same step was reached twice during execution
   - Prevents chains from running indefinitely
   
-- **`low_confidence_error`**: A decision or generate text step didn't meet its confidence threshold
-  - Model's confidence score was below the required threshold
+- **`low_confidence_error`**: An AI step didn't meet its confidence threshold
+  - Too few of a decision step's 5 runs agreed on an answer, or a generate text step returned no value
   - Useful for triggering manual review or alternative workflows
 
 - **`usage_limit_exceeded_error`**: API usage limits have been reached
@@ -507,7 +507,7 @@ The `data.log` field contains an array of steps in the order they were executed.
 #### Step Types and Results
 
 **Decision and Generate Text Steps** (`stepType: 'inference'`):
-Both step types in the editor are logged as `'inference'`. A decision step has the AI model pick from a set of answers you defined, while a generate text step has it write free text, so for those `result` holds the generated text instead of one of your answers.
+Both step types in the editor are logged as `'inference'`. A decision step picks one of the answers you defined; it is answered 5 times and `confidence` is the share of runs that agreed. A generate text step writes text and runs once with no confidence check, so `confidenceMethod` is `'none'` and `confidence` is always `1.0`.
 
 ```python
 {
@@ -516,16 +516,19 @@ Both step types in the editor are logged as `'inference'`. A decision step has t
     'updatedVars': {'priority_level': 'high'},
     'res': {
         'result': {'priority': 'high'},           # Model's decision outputs
-        'success': True,                          # Met confidence threshold
-        'threshold': 0.7,                         # Required confidence level
-        'confidence': 0.95,                       # Actual confidence score
+        'success': True,                          # Enough runs agreed
+        'threshold': 0.7,                         # Required share of runs
+        'confidence': 1.0,                        # Share of runs that agreed
+        'confidenceMethod': 'agreement',          # 'none' for generate text steps
+        'samples': 5,                             # Times the decision was answered
+        'votes': {'high': 5},                     # Answers given across runs
         'explanation': 'I chose "high" because...',  # Model's reasoning
         'updatedVars': {}                         # Variables updated by model
     }
 }
 ```
 
-A generate text step's entry has the same shape, but the value in `result` is the text the model wrote:
+A generate text step's entry has the same keys, but the value in `result` is the text the model wrote:
 
 ```python
 'result': {'reply': 'Hi Sam, thanks for reaching out about...'},
