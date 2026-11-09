@@ -450,7 +450,7 @@ When a chain completes with `complete: True` and `success: False`, the `errorTyp
   - The same step was reached twice during execution
   - Prevents chains from running indefinitely
   
-- **`low_confidence_error`**: AI inference didn't meet confidence threshold
+- **`low_confidence_error`**: A decision or generate text step didn't meet its confidence threshold
   - Model's confidence score was below the required threshold
   - Useful for triggering manual review or alternative workflows
 
@@ -499,15 +499,15 @@ if result.get('complete') and not result.get('success'):
 
 The `data.log` field contains an array of steps in the order they were executed. Each step is a dictionary with these keys:
 
-- **`stepType`**: Type of step executed (`'inference'`, `'function_call'`, `'endpoint'`, or `'variable_checker'`)
+- **`stepType`**: Type of step executed (`'inference'` for decision and generate text steps, `'function_call'`, `'endpoint'`, or `'variable_checker'`)
 - **`stepTitle`**: Name/title of the step
 - **`updatedVars`**: Dictionary of variables that were updated (key = variable name, value = new value)
 - **`res`**: Result details that vary by step type
 
 #### Step Types and Results
 
-**Inference Steps** (`stepType: 'inference'`):
-AI model makes decisions or classifications based on data.
+**Decision and Generate Text Steps** (`stepType: 'inference'`):
+Both step types in the editor are logged as `'inference'`. A decision step has the AI model pick from a set of answers you defined, while a generate text step has it write free text, so for those `result` holds the generated text instead of one of your answers.
 
 ```python
 {
@@ -523,6 +523,12 @@ AI model makes decisions or classifications based on data.
         'updatedVars': {}                         # Variables updated by model
     }
 }
+```
+
+A generate text step's entry has the same shape, but the value in `result` is the text the model wrote:
+
+```python
+'result': {'reply': 'Hi Sam, thanks for reaching out about...'},
 ```
 
 **Function Call Steps** (`stepType: 'function_call'`):
